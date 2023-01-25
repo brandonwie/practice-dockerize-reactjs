@@ -54,3 +54,13 @@ COPY . .
 
 EXPOSE 3000
 CMD ["yarn", "start"]
+
+#? build image
+#* $ docker build -t react-image .
+
+#? outside of containers can't talk to containers by default'
+# so `EXPOSE 3000` doesn't do anything else than just exposing the port inside the container
+
+#* $ docker run -d -p 3001:3000  --name react-app react-image
+# 3001 = port on the host machine (poked hole for outside world)
+# 3000 = port on the container (what port we're going to send traffic to our conatiner')
