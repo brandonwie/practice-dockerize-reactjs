@@ -75,6 +75,8 @@ CMD ["yarn", "start"]
 
 - The app listens on port 3000 so we want to expose port 3000 and then finally we need to do an yarn start to actually start the development server so we'll type in cmd
 
+---
+
 ## Build image
 
 ```bash
@@ -90,6 +92,8 @@ docker run -d -p 3001:3000 --name react-app react-image
 
 - 3001: port on the host machine (poked hole for outside world)
 - 3000: port on the container (what port we're going to send traffic to our container')
+
+---
 
 ## Docker networking - forwarding ports
 
@@ -124,7 +128,11 @@ stateDiagram-v2
     DockerReactContainer --> Chrome: Port 3000
 ```
 
+---
+
 ## dockerignore files
+
+> prevent unnecessary files from being copied into the image
 
 ```bash
 docker exec -it react-app sh # or bash
@@ -142,6 +150,13 @@ Dockerflie
 .git
 .gitignore
 .dockerignore
+```
+
+### Remove previous container and rebuild image
+
+```bash
+docker stop react-app
+docker rm react-app # `-f` to force remove if don't skip stop
 ```
 
 ---
