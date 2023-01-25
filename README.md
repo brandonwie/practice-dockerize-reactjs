@@ -145,9 +145,9 @@ docker exec -it react-app sh # or bash
 - `docker exec`: run a command in a running container
 - `-it`: interactive terminal
 - `react-app`: container name
-- `sh` or `bash`: shell (not every image is using the bash shell )
+- `sh` or `bash`: shell (not every image is using the bash shell)
 
-```dotfile
+```properties
 # .dockerignore
 node_modules
 Dockerfile
@@ -212,6 +212,79 @@ docker run -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
 
 ---
 
+### Hot Reload
+
+```bash
+ docker run -e CHOKIDAR_USEPOLLING=true -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
+```
+
+or you can edit to your environment variable in the Dockerfile
+
+```dockerfile
+ENV CHOKIDAR_USEPOLLING=true
+```
+
+### Hot Reload issue with CRA v5.0 (I used V5.0.1)
+
+#### [CRA 5.0 fails to hot-reload in a docker container](https://github.com/facebook/create-react-app/issues/11879#issuecomment-1072162532)
+
+1. Create `setup.js` file in the root directory
+
+   ```js
+   // setup.js
+   const fs = require('fs');
+   const path = require('path');
+
+   if (process.env.NODE_ENV === 'development') {
+     const webPackConfigFile = path.resolve(
+       './node_modules/react-scripts/config/webpack.config.js'
+     );
+     let webPackConfigFileText = fs.readFileSync(webPackConfigFile, 'utf8');
+
+     if (!webPackConfigFileText.includes('watchOptions')) {
+       if (webPackConfigFileText.includes('performance: false,')) {
+         webPackConfigFileText = webPackConfigFileText.replace(
+           'performance: false,',
+           "performance: false,\n\t\twatchOptions: { aggregateTimeout: 200, poll: 1000, ignored: '**/node_modules', },"
+         );
+         fs.writeFileSync(webPackConfigFile, webPackConfigFileText, 'utf8');
+       } else {
+         throw new Error(`Failed to inject watchOptions`);
+       }
+     }
+   }
+   ```
+
+2. Change `start` script in `package.json`
+
+   ```json
+   "scripts": {
+    "start": "node ./setup && react-scripts start",
+    ...
+   },
+   ```
+
+3. Set `WDS_SOCKET_PORT` to current port on Docker
+
+   ```properties
+   # .env
+   WDS_SOCKET_PORT=3001
+   ```
+
+   - otherwise, you'll see `WebSocketClient.js:16 WebSocket connection to 'ws://localhost:3001/ws' failed:` error on your console
+
+### NOW YOU HAVE UP AND RUNNING DOCKER CONTAINER WITH HOT RELOAD
+
+---
+
+## Environment variables
+
+```bash
+
+```
+
+---
+
 ## Create React App Readme
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -255,7 +328,3 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
-
-```
-
-```
