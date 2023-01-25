@@ -166,11 +166,49 @@ docker build -t react-image .
 docker run -d -p 3001:3000 --name react-app react-image
 ```
 
-### Go to shell in the container and check if the files are ignored properly
+### Go to shell in the container and check if the target files are ignored properly
 
 ```bash
 docker exec -it react-app sh
 ```
+
+```sh
+ls -a
+```
+
+---
+
+## Bind mounts to sync src code
+
+- the code doesn't reflect the changes in the working directory
+- you have to rebuild the image every time you make a change
+- it slows down the development process
+
+### Volumes
+
+> volumes allow you to share files between the host machine and the container <br>
+> Docker containers have a concept of volumes which allow you to have persistent data
+
+- if you have a container with any kind of data in the container if you kill the container the any data it has is lost and volumes just allow you to maintain that data even if your containers die
+
+### Bind mounts
+
+Stop container
+
+```bash
+docker rm react-app -f
+```
+
+And run container with bind mounts
+
+```bash
+docker run -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
+```
+
+- `-v`: bind mount
+  - `-v dirlocaldirectory:containerdirectory`
+  - `-v $(pwd):/app`: bind mount the current working directory to the `/app` directory in the container
+  - you can only sync `src` folder
 
 ---
 
