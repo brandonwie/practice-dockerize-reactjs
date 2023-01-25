@@ -91,19 +91,23 @@ docker run -d -p 3001:3000 --name react-app react-image
 - 3001: port on the host machine (poked hole for outside world)
 - 3000: port on the container (what port we're going to send traffic to our container')
 
+## Docker networking - forwarding ports
+
 ```mermaid
 stateDiagram-v2
     state OutsideOfHostMachine {
         direction RL
         [*] --> HostMachine: Port 3001
+        [*] --> HostMachine: Localhost 3000
         state HostMachine {
             direction RL
             yswsii:React\nContainer
             [*]-->yswsii: Port 3000
         }
-        [*] --> HostMachine: Localhost 3000
     }
 ```
+
+<br>
 
 ```mermaid
 stateDiagram-v2
@@ -118,6 +122,26 @@ stateDiagram-v2
     direction LR
     Chrome --> DockerReactContainer: Port 3000
     DockerReactContainer --> Chrome: Port 3000
+```
+
+## dockerignore files
+
+```bash
+docker exec -it react-app sh # or bash
+```
+
+- `docker exec`: run a command in a running container
+- `-it`: interactive terminal
+- `react-app`: container name
+- `sh` or `bash`: shell (not every image is using the bash shell )
+
+```dotfile
+# .dockerignore
+node_modules
+Dockerflie
+.git
+.gitignore
+.dockerignore
 ```
 
 ---
