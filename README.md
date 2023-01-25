@@ -90,6 +90,10 @@ docker build -t react-image .
 docker run -d -p 3001:3000 --name react-app react-image
 ```
 
+- `-d`: run in detached mode (run in the background)
+- `-p`: port forwarding (forwarding port from the host machine to the container)
+- `--name`: name of the container
+
 - 3001: port on the host machine (poked hole for outside world)
 - 3000: port on the container (what port we're going to send traffic to our container')
 
@@ -146,17 +150,26 @@ docker exec -it react-app sh # or bash
 ```dotfile
 # .dockerignore
 node_modules
-Dockerflie
+Dockerfile
 .git
 .gitignore
 .dockerignore
 ```
 
-### Remove previous container and rebuild image
+### Remove previous container, rebuild image, and run container
 
 ```bash
 docker stop react-app
 docker rm react-app # `-f` to force remove if don't skip stop
+
+docker build -t react-image .
+docker run -d -p 3001:3000 --name react-app react-image
+```
+
+### Go to shell in the container and check if the files are ignored properly
+
+```bash
+docker exec -it react-app sh
 ```
 
 ---
@@ -204,3 +217,7 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+```
+
+```
