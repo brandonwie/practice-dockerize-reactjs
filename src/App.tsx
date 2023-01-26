@@ -1,4 +1,3 @@
-import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
@@ -18,9 +17,7 @@ function App() {
         >
           Learn React!
         </a>
-        <p style={{ color: 'pink' }}>
-          {`Hello ${process.env.WDS_SOCKET_PORT}`} testers
-        </p>
+        <p style={{ color: 'pink' }}>Hot Reload works!</p>
       </header>
     </div>
   );
