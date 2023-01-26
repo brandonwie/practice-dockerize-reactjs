@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
 function App() {
+  const [count, setCount] = useState(0);
+
   return (
     <div className='App'>
       <header className='App-header'>
@@ -15,9 +18,10 @@ function App() {
           target='_blank'
           rel='noopener noreferrer'
         >
-          Learn React!
+          Learn React!!
         </a>
-        <p style={{ color: 'pink' }}>Hot Reload works!</p>
+        <p style={{ color: 'pink' }}>{count}</p>
+        <button onClick={() => setCount(count + 1)}>add</button>
       </header>
     </div>
   );

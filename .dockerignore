@@ -1,6 +1,6 @@
+# runs on docker build
 node_modules
 Dockerfile
 .git
 .gitignore
 .dockerignore
-.env*

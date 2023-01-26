@@ -138,14 +138,22 @@ stateDiagram-v2
 
 > prevent unnecessary files from being copied into the image
 
+Let's check the files inside the container first,
+
 ```bash
-docker exec -it react-app sh # or bash
+docker exec -it react-app sh # or bash if sh doesn't work
+
+ls -a
 ```
 
 - `docker exec`: run a command in a running container
 - `-it`: interactive terminal
 - `react-app`: container name
 - `sh` or `bash`: shell (not every image is using the bash shell)
+
+You will see a bunch of files that are unnecessary to keep inside.
+
+Let's create .dockerignore in the root folder of your local environment.
 
 ```properties
 # .dockerignore
@@ -154,9 +162,10 @@ Dockerfile
 .git
 .gitignore
 .dockerignore
+.env
 ```
 
-### Remove previous container, rebuild image, and run container
+### Remove the previous container, rebuild the image, and run the container
 
 ```bash
 docker stop react-app
@@ -176,11 +185,11 @@ docker exec -it react-app sh
 ls -a
 ```
 
+Now Docker runs the container named react-appwith the image that we created. However, the local changes won't apply to the app inside the container. We're gonna look into that.
+
 ---
 
-## 3 ways to Manage data in Docker container to sync src code
-
-There are three types of mounts, `bind`, `volume`, and `tmpfs`.
+## Manage data in a Docker container
 
 By default, all files created inside a container are stored on a writable container layer. This means that:
 
@@ -188,7 +197,7 @@ By default, all files created inside a container are stored on a writable contai
 
 - A container’s writable layer is tightly coupled to the host machine where the container is running. You can’t easily move the data somewhere else.
 
-- Writing into a container’s writable layer requires a storage driver to manage the filesystem. The storage driver provides a union filesystem, using the Linux kernel. This extra abstraction reduces performance as compared to using data volumes, which write directly to the host filesystem.
+- **Writing into a container’s writable layer requires a storage driver** to manage the filesystem. The storage driver provides a union filesystem, using the Linux kernel. This extra abstraction reduces performance as compared to using data volumes, which write directly to the host filesystem.
 
 **Docker has two options for containers to store files on the host machine**, so that the files are persisted even after the container stops: volumes, and bind mounts.
 
@@ -232,7 +241,7 @@ Docker also supports containers storing files in-memory on the host machine. Suc
 
 ### Bind mounts
 
-> Sanjeev uses bind mounts, so here, we're just gonna use it
+To make your local development environment communicate with the container you created, you need to use bind mounts method.
 
 Stop container
 
@@ -266,7 +275,9 @@ docker run --mount type=bind,source="$(pwd)",target=/app -d -p 3001:3000 --name 
 
 ### Hot Reload
 
-To enable `HMR(Hot Module Replacement)`,<br>
+\*(update 01.26.2022) I found that HMR works without setting up CHOKIDAR_USEPOLLINGvalue. I followed the implementation right below and HMR works perfectly. Please leave a comment if it doesn't work.
+
+To enable hot reload,<br>
 add `CHOKIDAR_USEPOLLING=true` as ENV to your Dockerfile
 
 [What is chokidar anyway?](https://www.npmjs.com/package/chokidar): Minimal and efficient cross-platform file-watching library
@@ -284,6 +295,8 @@ or you can add it to your `docker run` command with `-e` flag
 ```bash
  docker run -e CHOKIDAR_USEPOLLING=true -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
 ```
+
+> \*(update 01.26.2022) I found that HMR works without setting up CHOKIDAR_USEPOLLINGvalue. I followed the implementation right below and HMR works perfectly. Please leave a comment if it doesn't work.
 
 ### (important) Hot Reload issue with CRA v5.0 (I used V5.0.1)
 
@@ -316,6 +329,8 @@ or you can add it to your `docker run` command with `-e` flag
    }
    ```
 
+   the setup.js will find the webpack.config.js file and add watchOptions to it.
+
 2. Change `start` script in `package.json`
 
    ```json
@@ -329,7 +344,6 @@ or you can add it to your `docker run` command with `-e` flag
 
 ```properties
 ...
-ENV CHOKIDAR_USEPOLLING=true
 ENV WDS_SOCKET_PORT=3001
 COPY . .
 ...
@@ -341,7 +355,7 @@ or you can add it to the `docker run` command with `-e` flag
 docker run -e WDS_SOCKET_PORT=3001 -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
 ```
 
-- otherwise, you'll see `WebSocketClient.js:16 WebSocket connection to 'ws://localhost:3001/ws' failed:` error on your console
+- otherwise, you'll see `WebSocketClient.js:16 WebSocket connection to 'ws://localhost:3000/ws' failed:` error on your console
 
 4. Remove the running container and re-run it.
 
