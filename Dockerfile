@@ -20,6 +20,11 @@ COPY package.json .
 # the next thing that we want to do is run an npm install
 RUN yarn install
 
+# hot reload
+ENV CHOIDAR_USERPOLLING=true
+# wds error fix on CRA v5
+ENV WDS_SOCKET_PORT=3001
+
 # next thing that i want to do is now copy the rest of all of our code
 # or the rest of all of our files into our container
 COPY . .

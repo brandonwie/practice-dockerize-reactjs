@@ -16,9 +16,11 @@ function App() {
           target='_blank'
           rel='noopener noreferrer'
         >
-          Learn React
+          Learn React!
         </a>
-        <p>Hello there!! Hi</p>
+        <p style={{ color: 'pink' }}>
+          {`Hello ${process.env.WDS_SOCKET_PORT}`} testers
+        </p>
       </header>
     </div>
   );
