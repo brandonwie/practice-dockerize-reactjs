@@ -1,0 +1,13 @@
+# Stage 1
+FROM node as build
+WORKDIR /app
+COPY package.json .
+RUN yarn install
+COPY . .
+# EXPOSE 3000 - no need to expose port in prod
+RUN ["yarn", "build"]
+
+# Stage 2
+
+FROM nginx
+COPY --from=build /app/build /usr/share/nginx/html

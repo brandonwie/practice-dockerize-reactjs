@@ -1,0 +1,39 @@
+# version of docker
+# https://docs.docker.com/compose/compose-file/compose-file-v3/
+version: '3.8'
+# service represent container
+services:
+  react-app:
+    # image name
+    # image: react-image
+    # container name
+    # container_name: react-app
+    # build image from Dockerfile
+    build:
+      # either a path to a directory containing a Dockerfile, or a url to a git repository.
+      context: .
+      dockerfile: Dockerfile.dev
+    # port mapping
+    ports:
+      - '3001:3000'
+    # bind mount
+    # volume mapping
+    volumes:
+      - ./src:/app/src:ro
+    # environment variables
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_NAME=brandonwie
+    # envfile
+    # env_file:
+    #   - ./.env
+
+    # command to run
+    # command: ['npm', 'start']
+
+    # restart policy
+    # restart: always
+
+    # depends on
+    # depends_on:
+    #   - mongo

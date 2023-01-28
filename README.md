@@ -296,7 +296,7 @@ or you can add it to your `docker run` command with `-e` flag
  docker run -e CHOKIDAR_USEPOLLING=true -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
 ```
 
-> \*(update 01.26.2022) I found that HMR works without setting up CHOKIDAR_USEPOLLINGvalue. I followed the implementation right below and HMR works perfectly. Please leave a comment if it doesn't work.
+> \*(update 01.26.2022) I found that HMR works without setting up CHOKIDAR_USEPOLLING value on MacOS. I followed the implementation right below and HMR works perfectly. Please leave a comment if it doesn't work.
 
 ### (important) Hot Reload issue with CRA v5.0 (I used V5.0.1)
 
@@ -375,12 +375,18 @@ because the current setting won't stop the container write to the host machine(l
 
 ```bash
 # using volume flag: insert `:ro` after destination directory
-docker run -e CHOKIDAR_USEPOLLING=true -v $(pwd):/app:ro -d -p 3001:3000 --name react-app react-image
+docker run -e CHOKIDAR_USEPOLLING=true -v $(pwd)/src:/app/src:ro -d -p 3001:3000 --name react-app react-image
 # using mount flag: add `,readonly` in type
-docker run -e CHOKIDAR_USEPOLLING=true --mount type=bind,source="$(pwd)",target=/app,readonly -d -p 3001:3000 --name react-app react-image
+docker run -e CHOKIDAR_USEPOLLING=true --mount type=bind,source="$(pwd)"/src,target=/app/src,readonly -d -p 3001:3000 --name react-app react-image
 ```
 
-now container can't write to the host machine
+Now container can't write to the host machine.
+
+One thing to notice is that the `readonly` has set to files inside the `src` folder. It is because if you include `node_modules`, you will see the **eslint cache error** inside the `node_modules` folder once you run `docker run` command.
+
+```console
+[eslint] EROFS: read-only file system, open '/app/node_modules/.cache/.eslintcache'
+```
 
 ```sh
 ➜ docker exec -it react-app sh
@@ -389,7 +395,165 @@ $ touch hello
 touch: hello: Read-only file system
 ```
 
-## Environment variables
+---
+
+## Docker Compose
+
+> Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration.
+
+- as you keep working with docker some of your docker run commands will start to get even longer than this
+- generally when you're working with a dockerized application you're going to have multiple containers that you need to spin up to actually do all of your testing and to do your development
+- imagine having to remember five or six of these long commands for you to have to run just to bring up your development environment and then imagine having to kill all those containers one by one 😅
+
+### Create docker-compose.yml
+
+```yml
+# version of docker
+# https://docs.docker.com/compose/compose-file/compose-file-v3/
+version: '3.8'
+services:
+  # service represent container
+  react-app:
+    build: .
+    ports:
+      - '3001:3000'
+    volumes:
+      - ./src:/app/src
+    environment:
+      - CHOKIDAR_USEPOLLING=true # if you're on Windows
+```
+
+1. `docker-compose up` to start the container. (if you have `docker-compose.yml` file in the current directory)
+2. Docker will create a network for the containers to communicate with each other.
+   1. `⠿ Network practice-dockerize-react-app_default        Created`
+3. Docker will create a new image for the container and the container itself.
+   1. `=> exporting to image`
+   2. `⠿ Container practice-dockerize-react-app-react-app_1  Created`
+   3. check the image with `docker image ls`
+
+- I found it's no longer needed to feed the `WDS_SOCKET_PORT` environment variable
+
+When you make changes to the `Dockerfile` and rerun `docker-compose up`, Docker won't rebuild the image and just restart the container.
+
+It because Docker only looks for a docker image with a specific name based of your project directory and the service name it has no idea if this is the latest image if this is a stale image it just looks for an image with that name and if it sees it it's not going to rebuild it
+
+> **so you have to tell docker compose when you want to rebuild**
+
+```bash
+docker-compose up -d --build
+```
+
+### now we got a solid workflow, but this will only work for development
+
+if you sent a couple thousand connections it would probably destroy it
+
+---
+
+## Multi-stage Build for Production with NGINX
+
+you have to change the React Dev Server to a production grade server such as NGINX Server (can be Apache)
+
+```mermaid
+stateDiagram-v2
+    Chrome
+    state Docker_React_Container {
+        state NGINX_SERVER {
+            index.html
+            CSS
+            JS
+        }
+    }
+    direction LR
+    Chrome --> Docker_React_Container: Port 3000
+    Docker_React_Container --> Chrome: Port 3000
+```
+
+the NGINX server will serve the static files when you run `yarn build`
+
+what enabled this process is by having multi-stage docker builds
+
+```mermaid
+stateDiagram-v2
+    state Stage_1 {
+      s1:Use Node 19
+      s2:Copy package.json file
+      s3:Install Dependencies
+      s4:Copy rest of files(src code)
+      s5:Run build (npm run build | yarn build)
+      s1 --> s2
+      s2 --> s3
+      s3 --> s4
+      s4 --> s5
+    }
+    direction LR
+    Stage_1 --> Build
+    state Stage_2 {
+      s6:Use NGINX
+      s7:Copy build folder from Stage_1
+      s8:Start NGINX
+      s6 --> s7
+      s7 --> s8
+    }
+    Build --> Stage_2
+```
+
+> [What is NGINX?](https://www.nginx.com/resources/glossary/nginx/)
+
+### Change current `Dockerfile` name as `Dockerfile.dev`
+
+To create production environment, we're going to specify the current Dockerfile as `Dockerfile.dev` and create a new Dockerfile for production.
+
+Now you need a new command to build the image using `Dockerfile.dev` on development.
+
+```bash
+docker build -f Dockerfile.dev .
+```
+
+Also the command on the `docker-compose.yml` file should be changed to
+
+```yml
+build:
+  context: .
+  dockerfile: Dockerfile.dev
+```
+
+### Create `Dockerfile.prod` for production
+
+```dockerfile
+# Dockerfile.prod
+# Stage 1
+FROM node as build
+WORKDIR /app
+COPY package.json .
+RUN yarn install
+COPY . .
+# EXPOSE 3000 - no need to expose port in prod
+RUN ["yarn", "build"]
+
+# Stage 2
+FROM nginx
+# from /app/build folder to the nginx folder where it serves the static files
+COPY --from=build /app/build /usr/share/nginx/html
+```
+
+check out [this link](https://hub.docker.com/_/nginx) for more information about NGINX
+
+### Let's build the production image with `Dockerfile.prod`
+
+```bash
+docker build -f Dockerfile.prod -t react-image-prod .
+```
+
+### Let's create a new container with the production image
+
+```bash
+docker run --env-file ./.env  -d -p 8080:80 --name react-app-prod react-image-prod
+```
+
+- no need to bind the volume because we're not going to make any changes to the production image
+- the default port for NGINX is 80, and you can change `8080:80` to `80:80` or whatnot if you want
+
+Now go to `localhost:8080` and you should see the production build of the React App
 
 ---
 

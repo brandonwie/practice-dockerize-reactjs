@@ -18,8 +18,9 @@ function App() {
           target='_blank'
           rel='noopener noreferrer'
         >
-          Learn React!!
+          Learn React
         </a>
+        <p>{`Hello ${process.env.REACT_APP_NAME}`}</p>
         <p style={{ color: 'pink' }}>{count}</p>
         <button onClick={() => setCount(count + 1)}>add</button>
       </header>
