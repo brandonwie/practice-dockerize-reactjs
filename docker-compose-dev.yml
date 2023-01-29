@@ -16,4 +16,5 @@ services:
     volumes:
       - ./src:/app/src:ro
     env_file:
+      - .env
       - .env.dev

@@ -4,5 +4,6 @@ WORKDIR /app
 COPY package.json .
 RUN yarn install
 COPY . .
+ENV GLOBAL_REACT_APP_API_URL=http://localhost:3000
 EXPOSE 3000
 CMD ["yarn", "start"]

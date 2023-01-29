@@ -8,10 +8,13 @@ services:
       # either a path to a directory containing a Dockerfile, or a url to a git repository.
       context: .
       dockerfile: Dockerfile.prod
+      args:
+        - REACT_APP_NAME=brandonwie-prod
     # port mapping
     ports:
       - '8080:80'
     # no bind mount
     # environment variables
-    environment:
-      - REACT_APP_NAME=brandonwie-prod
+    env_file:
+      - .env
+      - .env.prod

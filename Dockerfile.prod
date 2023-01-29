@@ -2,6 +2,8 @@
 FROM node as build
 WORKDIR /app
 COPY package.json .
+ARG REACT_APP_NAME
+ENV REACT_APP_NAME=$REACT_APP_NAME
 RUN yarn install
 COPY . .
 # EXPOSE 3000 - no need to expose port in prod

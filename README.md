@@ -2,7 +2,7 @@
 
 > Development to Production workflow + multi-stage builds + docker compose
 
-## Create Dockerfile
+## Step 1. Create Dockerfile
 
 > contain all of the steps we need to customize an image
 
@@ -53,7 +53,7 @@ COPY . .
 
 - next thing that you want to do is now copy the rest of all of our code or the rest of all of our files into our container
 
-### why copy package.json again above?
+### 1-1. why copy package.json again above?
 
 - an optimization for Docker to build the image faster for future buildsk
 - installing dependencies is a very expensive operation
@@ -62,7 +62,7 @@ COPY . .
 - on build, Docker caches these the result of each layer
 - package.json doesn't change that often unless we add a new dependency, we can cache the result of two layers,
 
-### `COPY package.json` . and `RUN yarn install` (the two layers)
+### 1-2. `COPY package.json` . and `RUN yarn install` (the two layers)
 
 - and then when we build the image again, Docker will use the cached result
 - Docker would have no idea whether we changed our source code or we changed the dependencies in our packages.json so every time we ran a copy we would have to then do a full npm install regardless of whether or not the dependencies change so we would be unable to take the cache result
@@ -77,7 +77,7 @@ CMD ["yarn", "start"]
 
 ---
 
-## Build image
+## Step 2. Build image
 
 ```bash
 docker build -t react-image .
@@ -134,7 +134,7 @@ stateDiagram-v2
 
 ---
 
-## dockerignore files
+## Step 3. dockerignore files
 
 > prevent unnecessary files from being copied into the image
 
@@ -165,7 +165,7 @@ Dockerfile
 .env
 ```
 
-### Remove the previous container, rebuild the image, and run the container
+### 3-1. Remove the previous container, rebuild the image, and run the container
 
 ```bash
 docker stop react-app
@@ -175,7 +175,7 @@ docker build -t react-image .
 docker run -d -p 3001:3000 --name react-app react-image
 ```
 
-### Go to shell in the container and check if the target files are ignored properly
+### 3-2. Go to shell in the container and check if the target files are ignored properly
 
 ```bash
 docker exec -it react-app sh
@@ -237,11 +237,11 @@ Docker also supports containers storing files in-memory on the host machine. Suc
 
 ---
 
-## Enough with explanations, let's continue.
+### Enough with explanations, let's continue.
 
-### Bind mounts
+## Step 4. Bind mounts
 
-To make your local development environment communicate with the container you created, you need to use bind mounts method.
+> To make your local development environment communicate with the container you created, you need to use bind mounts method.
 
 Stop container
 
@@ -273,7 +273,7 @@ docker run --mount type=bind,source="$(pwd)",target=/app -d -p 3001:3000 --name 
 
 ---
 
-### Hot Reload
+### 4-1. Hot Reload
 
 \*(update 01.26.2022) I found that HMR works without setting up CHOKIDAR_USEPOLLINGvalue. I followed the implementation right below and HMR works perfectly. Please leave a comment if it doesn't work.
 
@@ -298,7 +298,7 @@ or you can add it to your `docker run` command with `-e` flag
 
 > \*(update 01.26.2022) I found that HMR works without setting up CHOKIDAR_USEPOLLING value on MacOS. I followed the implementation right below and HMR works perfectly. Please leave a comment if it doesn't work.
 
-### (important) Hot Reload issue with CRA v5.0 (I used V5.0.1)
+### 4-2. (important) Hot Reload issue with CRA v5.0 (I used V5.0.1)
 
 #### [CRA 5.0 fails to hot-reload in a docker container](https://github.com/facebook/create-react-app/issues/11879#issuecomment-1072162532)
 
@@ -369,7 +369,7 @@ or you can add it to your `docker run` command with `-e` flag
 
 ---
 
-## Bind Mounts Readonly
+### 4-3. Bind Mounts Readonly
 
 because the current setting won't stop the container write to the host machine(local machine), and this is not necessary, so we can make the bind mount readonly
 
@@ -397,7 +397,7 @@ touch: hello: Read-only file system
 
 ---
 
-## Docker Compose
+## Step 5. Docker Compose
 
 > Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration.
 
@@ -405,7 +405,7 @@ touch: hello: Read-only file system
 - generally when you're working with a dockerized application you're going to have multiple containers that you need to spin up to actually do all of your testing and to do your development
 - imagine having to remember five or six of these long commands for you to have to run just to bring up your development environment and then imagine having to kill all those containers one by one 😅
 
-### Create docker-compose.yml
+### 5-1. Create docker-compose.yml
 
 ```yml
 # version of docker
@@ -449,7 +449,7 @@ if you sent a couple thousand connections it would probably destroy it
 
 ---
 
-## Multi-stage Build for Production with NGINX
+## Step 6. Multi-stage Build for Production with NGINX
 
 you have to change the React Dev Server to a production grade server such as NGINX Server (can be Apache)
 
@@ -499,7 +499,7 @@ stateDiagram-v2
 
 > [What is NGINX?](https://www.nginx.com/resources/glossary/nginx/)
 
-### Change current `Dockerfile` name as `Dockerfile.dev`
+### 6-1. Change current `Dockerfile` name as `Dockerfile.dev`
 
 To create production environment, we're going to specify the current Dockerfile as `Dockerfile.dev` and create a new Dockerfile for production.
 
@@ -517,7 +517,7 @@ build:
   dockerfile: Dockerfile.dev
 ```
 
-### Create `Dockerfile.prod` for production
+### 6-2. Create `Dockerfile.prod` for production
 
 ```dockerfile
 # Dockerfile.prod
@@ -538,13 +538,13 @@ COPY --from=build /app/build /usr/share/nginx/html
 
 check out [this link](https://hub.docker.com/_/nginx) for more information about NGINX
 
-### Let's build the production image with `Dockerfile.prod`
+### 6-3. Let's build the production image with `Dockerfile.prod`
 
 ```bash
 docker build -f Dockerfile.prod -t react-image-prod .
 ```
 
-### Let's create a new container with the production image
+### 6-4. Let's create a new container with the production image
 
 ```bash
 docker run --env-file ./.env  -d -p 8080:80 --name react-app-prod react-image-prod
@@ -557,7 +557,7 @@ Now go to `localhost:8080` and you should see the production build of the React 
 
 ---
 
-## Development vs Production workflow
+## Step 7. Development vs Production workflow
 
 Let's create 3 different docker-compose files, one for development, one for production, and one for backup.
 
@@ -565,7 +565,7 @@ Let's create 3 different docker-compose files, one for development, one for prod
 touch docker-compose.dev.yml docker-compose.prod.yml docker-compose.backup.yml
 ```
 
-### `docker-compose.dev.yml`
+### 7-1. Create `docker-compose.dev.yml`
 
 ```yml
 # version of docker
@@ -594,7 +594,7 @@ services:
 
 For now, let's just copy and paste the `docker-compose.dev.yml` file to `docker-compose.backup.yml`
 
-### `docker-compose.prod.yml`
+### 7-2. Create `docker-compose.prod.yml`
 
 ```yml
 # version of docker
@@ -620,23 +620,66 @@ The differences between `docker-compose.dev.yml` and `docker-compose.prod.yml` a
 
 (\*important) `WDS_SOCKET_PORT` variable is only for the development, and it doesn't need to be configured if you set the TCP port(`3000`) and the Docker host port(`3001`) to be the same. I intentionally set the Docker host port to be `3001` just to show you how it actually works.
 
-### About Environment Variables
+---
 
-Regarding environment variables, you can add it inside the `Dockerfile.*`s, or just add it in the `docker-compose.*.yml` files.<br> However, I prefer having separate `.env`, `.env.(dev|prod)` files, and add them in the `docker-compose.*.yml` files for the sake of better management, readability.
+## About Environment Variables
 
-Here's [the documentation](https://docs.docker.com/compose/environment-variables/) about `env_file` configuration.
+### 3 ways of setting up environment Variables
 
-```yml
-react-app:
-  env_file:
-    - .env # your env file name
+> checkout [this page](https://docs.docker.com/compose/envvars-precedence/) for more for the precedence of the environment variables on Docker
+
+1. inside `Dockerfile` - [docs link](https://docs.docker.com/engine/reference/builder/#env)
+
+   ```dockerfile
+   ENV REACT_APP_NAME=myApp
+   ```
+
+2. inside `docker-compose.yml` - [docs link](https://docs.docker.com/compose/environment-variables/#set-environment-variables-in-containers)
+
+   ```yml
+   react-app:
+      # Array syntax
+    environment:
+      - REACT_APP_NAME=myApp
+      # Map syntax
+    environment:
+      REACT_APP_NAME: myApp
+   ```
+
+3. in separate `.env` file, and add it inside `docker-compose.yml` - [docs link](https://docs.docker.com/compose/environment-variables/#the-env-file)
+
+   ```properties
+   REACT_APP_NAME=myApp
+   ```
+
+   ```yml
+   react-app:
+     env_file:
+       - .env
+   ```
+
+- Environment variables in `Dockerfile` affect `docker build` and `docker run`
+  - TMI: use [`--build-arg`](https://docs.docker.com/engine/reference/commandline/build/#-set-build-time-variables---build-arg) if persistence is not what you want
+- Environment variables in `docker-compose` could override `docker run`
+- Environment variables in `docker-compose` have precedence over `env_file`
+
+---
+
+### 7-3. Build image and run container using `docker-compose.dev`
+
+```bash
+ docker-compose -f docker-compose.yml -f docker-compose-dev.yml up -d --build
 ```
 
-### Set up dev environment
+Now go to `localhost:3001` and you should see the development build of the React App
 
-```yml
+### 7-4. Build image and run container using `docker-compose.prod`
 
+```bash
+docker-compose -f docker-compose.yml -f docker-compose-prod.yml up -d --build
 ```
+
+Now go to `localhost:8080` and you should see the production build of the React App
 
 ---
 
