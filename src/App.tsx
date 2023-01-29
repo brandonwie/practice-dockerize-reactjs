@@ -20,7 +20,7 @@ function App() {
         >
           Learn React
         </a>
-        <p>{`Hello ${process.env.REACT_APP_NAME}`}</p>
+        <p>{`Hello ${process.env.REACT_APP_NAME}`} d asd</p>
         <p style={{ color: 'pink' }}>{count}</p>
         <button onClick={() => setCount(count + 1)}>add</button>
       </header>

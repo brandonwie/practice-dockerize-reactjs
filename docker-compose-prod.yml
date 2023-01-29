@@ -4,11 +4,6 @@ version: '3.8'
 # service represent container
 services:
   react-app:
-    # image name
-    # image: react-image
-    # container name
-    # container_name: react-app
-    # build image from Dockerfile
     build:
       # either a path to a directory containing a Dockerfile, or a url to a git repository.
       context: .
@@ -16,24 +11,7 @@ services:
     # port mapping
     ports:
       - '8080:80'
-    # bind mount
-    # volume mapping
-    volumes:
-      - ./src:/app/src:ro
+    # no bind mount
     # environment variables
     environment:
-      - NODE_ENV=development
-      - REACT_APP_NAME=brandonwie
-    # envfile
-    # env_file:
-    #   - ./.env
-
-    # command to run
-    # command: ['npm', 'start']
-
-    # restart policy
-    # restart: always
-
-    # depends on
-    # depends_on:
-    #   - mongo
+      - REACT_APP_NAME=brandonwie-prod

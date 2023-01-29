@@ -342,28 +342,28 @@ or you can add it to your `docker run` command with `-e` flag
 
 3. Set `WDS_SOCKET_PORT` to the current port as ENV on Dockerfile
 
-```properties
-...
-ENV WDS_SOCKET_PORT=3001
-COPY . .
-...
-```
+   ```properties
+   ...
+   ENV WDS_SOCKET_PORT=3001
+   COPY . .
+   ...
+   ```
 
-or you can add it to the `docker run` command with `-e` flag
+   or you can add it to the `docker run` command with `-e` flag
 
-```bash
-docker run -e WDS_SOCKET_PORT=3001 -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
-```
+   ```bash
+   docker run -e WDS_SOCKET_PORT=3001 -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
+   ```
 
-- otherwise, you'll see `WebSocketClient.js:16 WebSocket connection to 'ws://localhost:3000/ws' failed:` error on your console
+   - otherwise, you'll see `WebSocketClient.js:16 WebSocket connection to 'ws://localhost:3000/ws' failed:` error on your console
 
 4. Remove the running container and re-run it.
 
-```bash
-docker rm react-app -f
+   ```bash
+   docker rm react-app -f
 
-docker run -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
-```
+   docker run -v $(pwd):/app -d -p 3001:3000 --name react-app react-image
+   ```
 
 ### NOW YOU HAVE UP AND RUNNING DOCKER CONTAINER WITH HOT RELOAD
 
@@ -554,6 +554,89 @@ docker run --env-file ./.env  -d -p 8080:80 --name react-app-prod react-image-pr
 - the default port for NGINX is 80, and you can change `8080:80` to `80:80` or whatnot if you want
 
 Now go to `localhost:8080` and you should see the production build of the React App
+
+---
+
+## Development vs Production workflow
+
+Let's create 3 different docker-compose files, one for development, one for production, and one for backup.
+
+```bash
+touch docker-compose.dev.yml docker-compose.prod.yml docker-compose.backup.yml
+```
+
+### `docker-compose.dev.yml`
+
+```yml
+# version of docker
+# https://docs.docker.com/compose/compose-file/compose-file-v3/
+version: '3.8'
+# service represent container
+services:
+  react-app:
+    build:
+      # either a path to a directory containing a Dockerfile, or a url to a git repository.
+      context: .
+      dockerfile: Dockerfile.dev
+    # port mapping
+    ports:
+      - '3001:3000'
+    # bind mount
+    # volume mapping
+    volumes:
+      - ./src:/app/src:ro
+    # environment variables
+    environment:
+      - WDS_SOCKET_PORT=3001
+      - NODE_ENV=development
+      - REACT_APP_NAME=brandonwie-dev
+```
+
+For now, let's just copy and paste the `docker-compose.dev.yml` file to `docker-compose.backup.yml`
+
+### `docker-compose.prod.yml`
+
+```yml
+# version of docker
+# https://docs.docker.com/compose/compose-file/compose-file-v3/
+version: '3.8'
+# service represent container
+services:
+  react-app:
+    build:
+      # either a path to a directory containing a Dockerfile, or a url to a git repository.
+      context: .
+      dockerfile: Dockerfile.prod
+    # port mapping
+    ports:
+      - '8080:80'
+    # no bind mount
+    # environment variables
+    environment:
+      - REACT_APP_NAME=brandonwie-prod
+```
+
+The differences between `docker-compose.dev.yml` and `docker-compose.prod.yml` are _the bind mount_, _the port mapping_, and _WDS_SOCKET_PORT environment variable_ for hot reload.
+
+(\*important) `WDS_SOCKET_PORT` variable is only for the development, and it doesn't need to be configured if you set the TCP port(`3000`) and the Docker host port(`3001`) to be the same. I intentionally set the Docker host port to be `3001` just to show you how it actually works.
+
+### About Environment Variables
+
+Regarding environment variables, you can add it inside the `Dockerfile.*`s, or just add it in the `docker-compose.*.yml` files.<br> However, I prefer having separate `.env`, `.env.(dev|prod)` files, and add them in the `docker-compose.*.yml` files for the sake of better management, readability.
+
+Here's [the documentation](https://docs.docker.com/compose/environment-variables/) about `env_file` configuration.
+
+```yml
+react-app:
+  env_file:
+    - .env # your env file name
+```
+
+### Set up dev environment
+
+```yml
+
+```
 
 ---
 

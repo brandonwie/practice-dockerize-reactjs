@@ -1,0 +1,9 @@
+# version of docker
+# https://docs.docker.com/compose/compose-file/compose-file-v3/
+version: '3.8'
+# service represent container
+services:
+  react-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
